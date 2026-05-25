@@ -75,17 +75,27 @@ def make_slug(title: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:80]
 
 
-def write_articles_from_headlines(items: list[dict], client: anthropic.Anthropic) -> list[dict]:
+def already_covered_block(existing: list[dict], limit: int = 60) -> str:
+    """Return a formatted list of recent article titles to pass to Claude as a do-not-repeat list."""
+    titles = [a["title"] for a in existing[:limit]]
+    if not titles:
+        return ""
+    lines = "\n".join(f"- {t}" for t in titles)
+    return f"\nTopics already covered (do NOT repeat or substantially overlap with any of these):\n{lines}\n"
+
+
+def write_articles_from_headlines(items: list[dict], existing: list[dict], client: anthropic.Anthropic) -> list[dict]:
     headlines = "\n".join(
         f"{i+1}. {x['title']} — {x['desc'][:120]}" for i, x in enumerate(items)
     )
+    covered = already_covered_block(existing)
     prompt = f"""You are the editor of longcovidnews.com, a trusted daily digest covering long COVID research, law, and policy.
-
+{covered}
 Here are today's headlines:
 
 {headlines}
 
-Pick the 3 most newsworthy and write a separate 400-500 word article for each. Each article must:
+Pick the 3 most newsworthy headlines that have NOT already been covered above, and write a separate 400-500 word article for each. Each article must:
 - Have a clear factual headline
 - Open with the key fact in the first sentence
 - Explain significance for long COVID patients, researchers, or advocates
@@ -109,12 +119,13 @@ Raw JSON only, no markdown fences."""
     return json.loads(raw)
 
 
-def write_articles_from_knowledge(client: anthropic.Anthropic) -> list[dict]:
+def write_articles_from_knowledge(existing: list[dict], client: anthropic.Anthropic) -> list[dict]:
     """Fallback: ask Claude to write about recent long COVID developments it knows about."""
     today = datetime.now(timezone.utc).strftime("%B %Y")
+    covered = already_covered_block(existing)
     prompt = f"""You are the editor of longcovidnews.com. Today is {today}.
-
-Write 3 timely, informative articles about long COVID — covering recent research findings, legal/disability developments, treatment advances, or policy changes. Focus on the most clinically or socially significant developments from recent months.
+{covered}
+Write 3 timely, informative articles about long COVID that have NOT already been covered above — covering recent research findings, legal/disability developments, treatment advances, or policy changes. Focus on the most clinically or socially significant developments from recent months that are distinct from prior coverage.
 
 Each article must:
 - Have a specific, factual headline (not generic — name specific studies, courts, drugs, policies)
@@ -144,6 +155,16 @@ Raw JSON only, no markdown fences."""
 def main():
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
+    # Load existing articles FIRST so we can pass them to Claude
+    articles_path = os.path.join(os.path.dirname(__file__), "..", "articles.json")
+    try:
+        with open(articles_path) as f:
+            existing = json.load(f)
+    except Exception:
+        existing = []
+
+    print(f"Existing articles: {len(existing)}", file=sys.stderr)
+
     # Gather from all RSS sources
     seen, all_items = set(), []
     for url, keyword in RSS_SOURCES:
@@ -158,10 +179,10 @@ def main():
 
     try:
         if len(all_items) >= 3:
-            raw_articles = write_articles_from_headlines(all_items, client)
+            raw_articles = write_articles_from_headlines(all_items, existing, client)
         else:
             print("Not enough headlines — using Claude knowledge fallback", file=sys.stderr)
-            raw_articles = write_articles_from_knowledge(client)
+            raw_articles = write_articles_from_knowledge(existing, client)
     except Exception as e:
         print(f"Claude error: {e}", file=sys.stderr)
         return
@@ -179,22 +200,14 @@ def main():
             "source_url": a.get("source_url", ""),
         })
 
-    articles_path = os.path.join(os.path.dirname(__file__), "..", "articles.json")
-    try:
-        with open(articles_path) as f:
-            existing = json.load(f)
-    except Exception:
-        existing = []
-
     existing_slugs = {a["slug"] for a in existing}
     fresh = [a for a in new_articles if a["slug"] not in existing_slugs]
 
     if not fresh:
-        print("All articles already exist, skipping.", file=sys.stderr)
+        print("No new articles to publish.", file=sys.stderr)
         return
 
-    merged = fresh + existing
-    merged = merged[:500]
+    merged = (fresh + existing)[:500]
 
     with open(articles_path, "w") as f:
         json.dump(merged, f, indent=2)
