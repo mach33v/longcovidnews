@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 Daily Long COVID News agent.
-Fetches recent news via Google News RSS, writes articles using Claude,
-prepends them to articles.json.
+Fetches recent news via multiple RSS sources, writes articles using Claude.
+Falls back to Claude generating articles from its own knowledge if RSS is blocked.
 """
 
 import json
@@ -17,35 +17,44 @@ from xml.etree import ElementTree
 
 import anthropic
 
-QUERIES = [
-    "long COVID research study",
-    "long COVID treatment symptoms",
-    "long COVID disability lawsuit",
-    "long COVID policy government",
+# Multiple RSS sources — more resilient than Google News alone
+RSS_SOURCES = [
+    ("https://feeds.reuters.com/reuters/healthNews", "long covid"),
+    ("https://rss.medicalnewstoday.com/featurednews.xml", "long covid"),
+    ("https://www.nih.gov/news-events/nih-research-matters/rss.xml", "long covid"),
+    ("https://tools.cdc.gov/podcasts/feed.asp?feedid=183", "long covid"),
+    ("https://jamanetwork.com/rss/site_3/67.xml", "long covid"),
+    ("https://www.bmj.com/rss/current.xml", "long covid"),
 ]
 
 CATEGORIES = {
-    "research": ["study", "research", "journal", "finding", "scientists", "clinical trial", "published"],
-    "legal": ["lawsuit", "court", "disability", "claim", "attorney", "settlement", "ruling", "ssdi"],
-    "policy": ["policy", "government", "congress", "fda", "nih", "cdc", "funding", "legislation"],
-    "treatment": ["treatment", "therapy", "drug", "vaccine", "symptom", "recovery", "medication"],
+    "research":  ["study","research","journal","finding","scientists","clinical","published","trial","biomarker"],
+    "legal":     ["lawsuit","court","disability","claim","attorney","settlement","ruling","ssdi","compensation"],
+    "policy":    ["policy","government","congress","fda","nih","cdc","funding","legislation","bill","act"],
+    "treatment": ["treatment","therapy","drug","vaccine","symptom","recovery","medication","relief","exercise"],
 }
 
-def fetch_rss(query: str) -> list[dict]:
-    encoded = urllib.parse.quote(query)
-    url = f"https://news.google.com/rss/search?q={encoded}&hl=en-US&gl=US&ceid=US:en"
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+
+def fetch_rss(url: str, keyword: str) -> list[dict]:
+    headers = {
+        "User-Agent": "Mozilla/5.0 (compatible; LongCovidNewsBot/1.0; +https://longcovidnews.com)",
+        "Accept": "application/rss+xml, application/xml, text/xml",
+    }
+    req = urllib.request.Request(url, headers=headers)
     try:
-        with urllib.request.urlopen(req, timeout=10) as r:
+        with urllib.request.urlopen(req, timeout=12) as r:
             xml = r.read()
         tree = ElementTree.fromstring(xml)
-        cutoff = datetime.now(timezone.utc) - timedelta(days=2)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=4)
         items = []
         for item in tree.findall(".//item"):
-            title = item.findtext("title", "").split(" - ")[0].strip()
+            title = item.findtext("title", "").strip()
             link  = item.findtext("link", "")
             desc  = item.findtext("description", "")
             pub   = item.findtext("pubDate", "")
+            full  = (title + " " + desc).lower()
+            if keyword not in full:
+                continue
             try:
                 from email.utils import parsedate_to_datetime
                 pub_dt = parsedate_to_datetime(pub).astimezone(timezone.utc)
@@ -54,92 +63,91 @@ def fetch_rss(query: str) -> list[dict]:
                 pub_iso = pub_dt.isoformat()
             except Exception:
                 pub_iso = datetime.now(timezone.utc).isoformat()
-            if title and "long covid" in (title + desc).lower():
-                items.append({"title": title, "url": link, "desc": desc, "pub": pub_iso})
+            if title:
+                items.append({"title": title, "url": link, "desc": desc[:200], "pub": pub_iso})
         return items
     except Exception as e:
-        print(f"RSS fetch failed for '{query}': {e}", file=sys.stderr)
+        print(f"RSS error {url}: {e}", file=sys.stderr)
         return []
-
-
-def guess_category(text: str) -> str:
-    text = text.lower()
-    for cat, keywords in CATEGORIES.items():
-        if any(k in text for k in keywords):
-            return cat
-    return "research"
 
 
 def make_slug(title: str) -> str:
-    s = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
-    return s[:80]
+    return re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:80]
 
 
-def write_articles(items: list[dict], client: anthropic.Anthropic) -> list[dict]:
-    if not items:
-        return []
-
-    headlines = "\n".join(f"{i+1}. {x['title']} — {x['desc'][:120]}" for i, x in enumerate(items))
-
-    # Ask Claude to pick the 3 best and write articles
+def write_articles_from_headlines(items: list[dict], client: anthropic.Anthropic) -> list[dict]:
+    headlines = "\n".join(
+        f"{i+1}. {x['title']} — {x['desc'][:120]}" for i, x in enumerate(items)
+    )
     prompt = f"""You are the editor of longcovidnews.com, a trusted daily digest covering long COVID research, law, and policy.
 
-Here are today's headlines (last 48 hours):
+Here are today's headlines:
 
 {headlines}
 
-Pick the 3 most newsworthy and write a separate 350-500 word article for each. Each article must:
-- Have a clear, factual headline (no clickbait)
+Pick the 3 most newsworthy and write a separate 400-500 word article for each. Each article must:
+- Have a clear factual headline
 - Open with the key fact in the first sentence
-- Explain the significance for long COVID patients, researchers, or advocates
-- Be written in plain, authoritative prose — not sensationalist
-- End with a 1-sentence "why this matters" conclusion
+- Explain significance for long COVID patients, researchers, or advocates
+- End with a one-sentence "why this matters" takeaway
 
-Return ONLY a JSON array with exactly 3 objects, each with these fields:
+Return ONLY a JSON array with exactly 3 objects:
 - "title": string
-- "excerpt": string (1-2 sentences, used as preview)
-- "body": string (HTML paragraphs using <p> and <h2> tags only)
+- "excerpt": string (1-2 sentence preview)
+- "body": string (HTML using <p> and <h2> tags only)
 - "category": one of: research, legal, policy, treatment, community
-- "source_url": string (the source URL from the headline list, or "" if unknown)
+- "source_url": string (URL from the headline list, or "")
 
-Return raw JSON only, no markdown fences."""
+Raw JSON only, no markdown fences."""
 
-    try:
-        msg = client.messages.create(
-            model="claude-opus-4-7",
-            max_tokens=4096,
-            messages=[{"role": "user", "content": prompt}]
-        )
-        raw = msg.content[0].text.strip()
-        # Strip markdown fences if present
-        raw = re.sub(r"^```json\s*|\s*```$", "", raw, flags=re.MULTILINE).strip()
-        articles = json.loads(raw)
-    except Exception as e:
-        print(f"Claude error: {e}", file=sys.stderr)
-        return []
+    msg = client.messages.create(
+        model="claude-opus-4-7",
+        max_tokens=4096,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    raw = re.sub(r"^```json\s*|\s*```$", "", msg.content[0].text.strip(), flags=re.MULTILINE).strip()
+    return json.loads(raw)
 
-    today = datetime.now(timezone.utc).date().isoformat()
-    results = []
-    for a in articles:
-        results.append({
-            "slug":       make_slug(a.get("title", "")),
-            "title":      a.get("title", ""),
-            "excerpt":    a.get("excerpt", ""),
-            "body":       a.get("body", ""),
-            "category":   a.get("category", "research"),
-            "date":       today,
-            "source_url": a.get("source_url", ""),
-        })
-    return results
+
+def write_articles_from_knowledge(client: anthropic.Anthropic) -> list[dict]:
+    """Fallback: ask Claude to write about recent long COVID developments it knows about."""
+    today = datetime.now(timezone.utc).strftime("%B %Y")
+    prompt = f"""You are the editor of longcovidnews.com. Today is {today}.
+
+Write 3 timely, informative articles about long COVID — covering recent research findings, legal/disability developments, treatment advances, or policy changes. Focus on the most clinically or socially significant developments from recent months.
+
+Each article must:
+- Have a specific, factual headline (not generic — name specific studies, courts, drugs, policies)
+- Open with the key fact in the first sentence
+- Run 400-500 words
+- Be written in plain authoritative prose
+- End with a one-sentence "why this matters" takeaway
+
+Return ONLY a JSON array with exactly 3 objects:
+- "title": string
+- "excerpt": string (1-2 sentence preview)
+- "body": string (HTML using <p> and <h2> tags only)
+- "category": one of: research, legal, policy, treatment, community
+- "source_url": string (leave "" since this is knowledge-based)
+
+Raw JSON only, no markdown fences."""
+
+    msg = client.messages.create(
+        model="claude-opus-4-7",
+        max_tokens=4096,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    raw = re.sub(r"^```json\s*|\s*```$", "", msg.content[0].text.strip(), flags=re.MULTILINE).strip()
+    return json.loads(raw)
 
 
 def main():
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
-    # Gather headlines from all queries, deduplicate by title
+    # Gather from all RSS sources
     seen, all_items = set(), []
-    for q in QUERIES:
-        for item in fetch_rss(q):
+    for url, keyword in RSS_SOURCES:
+        for item in fetch_rss(url, keyword):
             key = item["title"].lower()
             if key not in seen:
                 seen.add(key)
@@ -148,14 +156,28 @@ def main():
 
     print(f"Found {len(all_items)} unique headlines", file=sys.stderr)
 
-    if not all_items:
-        print("No headlines found, skipping.", file=sys.stderr)
+    try:
+        if len(all_items) >= 3:
+            raw_articles = write_articles_from_headlines(all_items, client)
+        else:
+            print("Not enough headlines — using Claude knowledge fallback", file=sys.stderr)
+            raw_articles = write_articles_from_knowledge(client)
+    except Exception as e:
+        print(f"Claude error: {e}", file=sys.stderr)
         return
 
-    new_articles = write_articles(all_items, client)
-    if not new_articles:
-        print("No articles written, skipping.", file=sys.stderr)
-        return
+    today = datetime.now(timezone.utc).date().isoformat()
+    new_articles = []
+    for a in raw_articles:
+        new_articles.append({
+            "slug":       make_slug(a.get("title", "")),
+            "title":      a.get("title", ""),
+            "excerpt":    a.get("excerpt", ""),
+            "body":       a.get("body", ""),
+            "category":   a.get("category", "research"),
+            "date":       today,
+            "source_url": a.get("source_url", ""),
+        })
 
     articles_path = os.path.join(os.path.dirname(__file__), "..", "articles.json")
     try:
@@ -164,7 +186,6 @@ def main():
     except Exception:
         existing = []
 
-    # Deduplicate by slug
     existing_slugs = {a["slug"] for a in existing}
     fresh = [a for a in new_articles if a["slug"] not in existing_slugs]
 
@@ -173,13 +194,14 @@ def main():
         return
 
     merged = fresh + existing
-    # Keep latest 500 articles
     merged = merged[:500]
 
     with open(articles_path, "w") as f:
         json.dump(merged, f, indent=2)
 
-    print(f"Published {len(fresh)} new article(s): {[a['title'] for a in fresh]}")
+    print(f"Published {len(fresh)} article(s):")
+    for a in fresh:
+        print(f"  [{a['category']}] {a['title']}")
 
 
 if __name__ == "__main__":
