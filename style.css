@@ -250,8 +250,111 @@ footer p { margin-bottom: 0.75rem; }
 .related a { color: rgba(255,255,255,0.65); transition: color 0.15s; }
 .related a:hover { color: white; }
 
+/* Contact modal */
+.contact-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10,15,30,0.7);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.contact-overlay.open { display: flex; }
+
+.contact-modal {
+  background: #fff;
+  border-radius: 1rem;
+  padding: 2.5rem;
+  max-width: 520px;
+  width: 100%;
+  position: relative;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+.contact-close {
+  position: absolute;
+  top: 1rem; right: 1.25rem;
+  background: none; border: none;
+  font-size: 1.5rem; cursor: pointer;
+  color: var(--muted); line-height: 1;
+}
+
+.contact-close:hover { color: var(--text); }
+
+.contact-modal h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 0.25rem;
+}
+
+.contact-sub { color: var(--muted); font-size: 0.875rem; margin-bottom: 1.5rem; }
+
+.contact-modal form { display: flex; flex-direction: column; gap: 1rem; }
+
+.cf-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+.contact-modal label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--navy-mid);
+  margin-bottom: 0.35rem;
+}
+
+.contact-modal input,
+.contact-modal textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.95rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg);
+  transition: border-color 0.15s;
+}
+
+.contact-modal input:focus,
+.contact-modal textarea:focus { outline: none; border-color: var(--accent); }
+
+.contact-modal textarea { resize: vertical; min-height: 100px; }
+
+.contact-modal button[type="submit"] {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-family: inherit;
+}
+
+.contact-modal button[type="submit"]:hover { background: var(--navy-mid); }
+
+.cf-success {
+  display: none;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
 @media (max-width: 600px) {
   .article-grid { grid-template-columns: 1fr; }
   header .container { gap: 0.75rem; }
   nav { gap: 1rem; }
+  .cf-row { grid-template-columns: 1fr; }
+  .contact-modal { padding: 1.75rem 1.25rem; }
 }

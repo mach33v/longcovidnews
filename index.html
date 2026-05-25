@@ -19,6 +19,7 @@
         <a href="/?cat=legal">Legal</a>
         <a href="/?cat=policy">Policy</a>
         <a href="/?cat=treatment">Treatment</a>
+        <a href="#contact" onclick="showContact(event)">Contact</a>
       </nav>
     </div>
   </header>
@@ -29,9 +30,36 @@
     </div>
   </main>
 
+  <!-- Contact modal -->
+  <div id="contact-overlay" class="contact-overlay" onclick="hideContact(event)">
+    <div class="contact-modal">
+      <button class="contact-close" onclick="hideContact()">&times;</button>
+      <h2>Get in Touch</h2>
+      <p class="contact-sub">Tips, corrections, partnerships, or general feedback.</p>
+      <form id="contact-form">
+        <div class="cf-row">
+          <div>
+            <label for="cf-name">Name</label>
+            <input type="text" id="cf-name" placeholder="Your name" required />
+          </div>
+          <div>
+            <label for="cf-email">Email</label>
+            <input type="email" id="cf-email" placeholder="you@example.com" required />
+          </div>
+        </div>
+        <div>
+          <label for="cf-message">Message</label>
+          <textarea id="cf-message" placeholder="What's on your mind?" required></textarea>
+        </div>
+        <button type="submit">Send Message</button>
+      </form>
+      <div class="cf-success" id="cf-success">✓ Message sent. We'll be in touch.</div>
+    </div>
+  </div>
+
   <footer>
     <div class="container">
-      <p>Long COVID News is an independent daily digest covering the latest developments in long COVID research, law, and policy.</p>
+      <p>Long COVID News is an independent daily digest covering the latest developments in long COVID research, law, and policy. &nbsp;<a href="#contact" onclick="showContact(event)" style="color:rgba(255,255,255,0.65)">Contact us</a></p>
       <div class="related">
         <span>Related:</span>
         <a href="https://longcoviddisability.com">longcoviddisability.com</a>
@@ -42,5 +70,41 @@
   </footer>
 
   <script src="app.js"></script>
+  <script>
+    function showContact(e) {
+      if (e) e.preventDefault();
+      document.getElementById('contact-overlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+    function hideContact(e) {
+      if (e && e.target !== document.getElementById('contact-overlay')) return;
+      document.getElementById('contact-overlay').classList.remove('open');
+      document.body.style.overflow = '';
+    }
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') hideContact(); });
+
+    document.getElementById('contact-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const btn = this.querySelector('button[type="submit"]');
+      btn.textContent = 'Sending…'; btn.disabled = true;
+      try {
+        const res = await fetch('/api/contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name:    document.getElementById('cf-name').value,
+            email:   document.getElementById('cf-email').value,
+            message: document.getElementById('cf-message').value,
+          })
+        });
+        if (!res.ok) throw new Error();
+        this.style.display = 'none';
+        document.getElementById('cf-success').style.display = 'block';
+      } catch {
+        btn.textContent = 'Send Message'; btn.disabled = false;
+        alert('Something went wrong. Please try again.');
+      }
+    });
+  </script>
 </body>
 </html>
