@@ -2,8 +2,8 @@ name: Daily Long COVID News
 
 on:
   schedule:
-    - cron: '0 13 * * *'   # 8am ET (UTC-5) / 9am EDT (UTC-4) — runs year-round
-  workflow_dispatch:        # allow manual trigger from GitHub Actions tab
+    - cron: '0 13 * * *'   # 8am ET daily
+  workflow_dispatch:
 
 jobs:
   publish:
@@ -28,10 +28,63 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python agent/run.py
 
-      - name: Commit and push if changed
+      - name: Commit updated articles
         run: |
           git config user.name  "Long COVID News Bot"
           git config user.email "bot@longcovidnews.com"
           git add articles.json
           git diff --cached --quiet || git commit -m "Daily update: $(date +'%Y-%m-%d')"
           git push
+
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_TEAM_ID: team_mxgswg0H6H5qIXHzQ2rW3LRE
+          VERCEL_PROJECT_ID: prj_OcpK1ADGdP3QkbZnm0XJpn5wyOAC
+        run: |
+          python3 - << 'PYEOF'
+          import json, urllib.request, urllib.error, os, time
+
+          token   = os.environ["VERCEL_TOKEN"]
+          team_id = os.environ["VERCEL_TEAM_ID"]
+          proj_id = os.environ["VERCEL_PROJECT_ID"]
+
+          def read(path):
+              with open(path) as f: return f.read()
+
+          deployment = {
+              "name": "longcovidnews",
+              "files": [
+                  {"file": "index.html",    "data": read("index.html")},
+                  {"file": "style.css",     "data": read("style.css")},
+                  {"file": "app.js",        "data": read("app.js")},
+                  {"file": "articles.json", "data": read("articles.json")},
+                  {"file": "vercel.json",   "data": read("vercel.json")},
+              ],
+              "projectSettings": {"framework": None},
+              "target": "production"
+          }
+
+          req = urllib.request.Request(
+              f"https://api.vercel.com/v13/deployments?teamId={team_id}",
+              data=json.dumps(deployment).encode(),
+              headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+              method="POST"
+          )
+          with urllib.request.urlopen(req) as r:
+              dep_id = json.loads(r.read())["id"]
+          print(f"Deploying {dep_id}...")
+
+          for _ in range(24):
+              time.sleep(5)
+              req2 = urllib.request.Request(
+                  f"https://api.vercel.com/v13/deployments/{dep_id}?teamId={team_id}",
+                  headers={"Authorization": f"Bearer {token}"}
+              )
+              with urllib.request.urlopen(req2) as r:
+                  d = json.loads(r.read())
+              state = d.get("readyState")
+              if state in ("READY","ERROR","CANCELED"):
+                  print(f"Done: {state}")
+                  break
+          PYEOF
