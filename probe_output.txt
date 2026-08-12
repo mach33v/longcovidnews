@@ -1,0 +1,148 @@
+======================================================================
+A. alternate hosts for the same platform
+======================================================================
+
+### api.myhealthdepartment.com
+curl: (6) Could not resolve host: api.myhealthdepartment.com
+STATUS=000 IP=
+
+
+### inspections-api.myhealthdepartment.com
+curl: (6) Could not resolve host: inspections-api.myhealthdepartment.com
+STATUS=000 IP=
+
+
+### app.myhealthdepartment.com
+curl: (6) Could not resolve host: app.myhealthdepartment.com
+STATUS=000 IP=
+
+
+### va.myhealthdepartment.com
+curl: (6) Could not resolve host: va.myhealthdepartment.com
+STATUS=000 IP=
+
+
+### healthspace.com
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+STATUS=000 IP=54.83.26.126
+
+
+### www.healthspace.com
+STATUS=404 IP=35.183.228.247
+
+
+### legacy healthspace VDH module
+establish a secure connection to it. To learn more about this situation and
+how to fix it, please visit the web page mentioned above.
+STATUS=000
+
+
+======================================================================
+B. does a third-party fetch of the portal succeed? (is it really our IP?)
+======================================================================
+
+### r.jina.ai reader proxy
+Title: 403 Forbidden
+
+URL Source: https://inspections.myhealthdepartment.com/va-henrico
+
+Warning: Target URL returned error 403: Forbidden
+
+Markdown Content:
+403 Forbidden
+
+
+======================================================================
+C. open data portals
+======================================================================
+
+### data.virginia.gov CKAN search: inspection
+count 114
+- Inspections | inspections1 | City of Norfolk
+- Inspections | inspections | City of Norfolk
+- Fire Inspections | fire-inspections | City of Norfolk
+- Vehicle Inspection File | vehicle-inspection-file | U.S Department of Transportation
+- Permits and Inspections | permits-and-inspections1 | City of Norfolk
+- Fire-Rescue Inspections | fire-rescue-inspections1 | City of Norfolk
+- Fire-Rescue Inspections | fire-rescue-inspections | City of Norfolk
+- Permits and Inspections | permits-and-inspections | City of Norfolk
+- Restaurant Inspection Results | restaurant-inspection-results | City of Norfolk
+- Inspections - Tabular | inspections-tabular | City of Lynchburg - GIS Portal 
+- Inspections - Locations | inspections-locations | City of Lynchburg - GIS Portal 
+- Inspection Citations | inspection-citations | HealthData.Gov
+- Vehicle Inspections and Violations | vehicle-inspections-and-violations | U.S Department of Transportation
+- SMS Input - Inspection | sms-input-inspection | U.S Department of Transportation
+- Inspections Per Unit | inspections-per-unit | U.S Department of Transportation
+- Inspections and Citations | inspections-and-citations | U.S Department of Transportation
+- Motor Carrier Inspections | motor-carrier-inspections | U.S Department of Transportation
+- CDRH Inspections Database | cdrh-inspections-database | HealthData.Gov
+- Rental Inspection Districts | rental-inspection-districts | Winchester
+- NHTSA Child Safety Seat Inspection Station Locator - NCSSISL - Child Car Seat Inspection Station Locator | nhtsa-child-safety-seat-inspection-station-locator-ncssisl-child-car-seat-inspection-station-lo | U.S Department of Transportation
+- NHTSA Child Safety Seat Inspection Station Locator - NCSSISL - Child Car Seat Inspection Station Locator | nhtsa-child-safety-seat-inspection-station-locator-ncssisl-child-car-seat-inspection-station-lo1 | U.S Department of Transportation
+- Storm Water Asset Inspections | storm-water-asset-inspections | City of Norfolk
+- NHTSA Child Safety Seat Inspection Station Locator | nhtsa-child-safety-seat-inspection-station-locator | U.S Department of Transportation
+- NHTSA Child Safety Seat Inspection Station Locator - NCSSISL | nhtsa-child-safety-seat-inspection-station-locator-ncssisl | U.S Department of Transportation
+- NHTSA Child Safety Seat Inspection Station Locator - NCSSISL - NHTSA API | nhtsa-child-safety-seat-inspection-station-locator-ncssisl-nhtsa-api1 | U.S Department of Transportation
+
+
+### data.virginia.gov CKAN search: restaurant OR food establishment
+count 3
+- U.S. State and Territorial Public Mask Mandates From April 8, 2020 through August 15, 2021 by State by Day | u-s-state-and-territorial-public-mask-mandates-from-april-8-2020-through-august-15-2021-by-stat | ['https://data.cdc.gov/api/v3/views/tzyy-aayg/export.csv?accessType=DOWNLOAD', 'https://data.cdc.gov/api/v3/views/tzyy-aayg/query.json?accessType=DOWNLOAD', 'https://data.cdc.gov/api/v3/views/tzyy-aayg/export.xml?accessType=DOWNLOAD']
+- U.S. State and Territorial Public Mask Mandates From April 10, 2020 through July 20, 2021 by County by Day | u-s-state-and-territorial-public-mask-mandates-from-april-10-2020-through-july-20-2021-by-count | ['https://data.cdc.gov/api/v3/views/42jj-z7fa/export.csv?accessType=DOWNLOAD', 'https://data.cdc.gov/api/v3/views/42jj-z7fa/query.json?accessType=DOWNLOAD', 'https://data.cdc.gov/api/v3/views/42jj-z7fa/export.xml?accessType=DOWNLOAD']
+- U.S. State and Territorial Public Mask Mandates From April 10, 2020 through August 15, 2021 by County by Day | u-s-state-and-territorial-public-mask-mandates-from-april-10-2020-through-august-15-2021-by-cou | ['https://data.cdc.gov/api/v3/views/62d6-pm5i/export.csv?accessType=DOWNLOAD', 'https://data.cdc.gov/api/v3/views/62d6-pm5i/query.json?accessType=DOWNLOAD', 'https://data.cdc.gov/api/v3/views/62d6-pm5i/export.xml?accessType=DOWNLOAD']
+
+
+======================================================================
+D. locality / district pages that may embed the data
+======================================================================
+
+### henrico.gov food service links
+href="#"
+href="#main"
+href="/apple-touch-icon-120x120.png"
+href="/apple-touch-icon-152x152.png"
+href="/apple-touch-icon-60x60.png"
+href="/apple-touch-icon-76x76.png"
+href="/cdn-cgi/l/email-protection#34667c7c7044467442505c1a425d46535d5a5d551a535b42"
+href="/health/contact-us/"
+href="/locations/wic-office/"
+href="http://www.cdc.gov/"
+href="http://www.epa.gov/"
+href="http://www.fda.gov/"
+href="http://www.fightbac.org"
+href="http://www.foodsafety.gov/"
+href="https://henrico.gov/"
+href="https://henrico.gov/HenricoSealShare.png"
+href="https://henrico.gov/apps/"
+href="https://henrico.gov/assets/cropped-Favicon_Henrico-180x180.png"
+href="https://henrico.gov/assets/cropped-Favicon_Henrico-192x192.png"
+href="https://henrico.gov/assets/cropped-Favicon_Henrico-32x32.png"
+href="https://henrico.gov/assets/translation_disclaimer.pdf"
+href="https://henrico.gov/audit/"
+href="https://henrico.gov/bldg/"
+href="https://henrico.gov/budget/"
+href="https://henrico.gov/business/"
+href="https://henrico.gov/calendar/"
+href="https://henrico.gov/cc/"
+href="https://henrico.gov/ccjudges/"
+href="https://henrico.gov/census/"
+href="https://henrico.gov/clerk/"
+href="https://henrico.gov/com-atty/"
+href="https://henrico.gov/communications/"
+href="https://henrico.gov/community"
+href="https://henrico.gov/contact-us"
+href="https://henrico.gov/contact-us/"
+href="https://henrico.gov/countyattorney/"
+href="https://henrico.gov/dec/"
+href="https://henrico.gov/departments/"
+href="https://henrico.gov/dss/"
+href="https://henrico.gov/emws/"
+
+
+### vdh richmond-city food safety
+href="https://inspections.myhealthdepartment.com/va-henrico"
+href="https://inspections.myhealthdepartment.com/va-richmond"
+href="https://inspections.myhealthdepartment.com/virginia"
+href="https://www.vdh.virginia.gov/content/uploads/sites/119/2023/12/Opening-a-Food-Establishment-Procedures-Checklist-Final-Inspection-Checklist-RCHD.pdf"
+
