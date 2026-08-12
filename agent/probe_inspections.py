@@ -1,116 +1,119 @@
 #!/usr/bin/env python3
-"""TEMPORARY discovery probe for the VDH inspections portal.
+"""TEMPORARY discovery probe for the VDH inspections portal (round 2).
 
-Runs in GitHub Actions (which has open network access) to reverse-engineer the
-data endpoints behind inspections.myhealthdepartment.com. Deleted once the real
-scraper is built.
+Round 1: every request to inspections.myhealthdepartment.com returned a bare
+nginx 403. Figure out whether that's headers, TLS fingerprint, or IP — and try
+a headless browser as the fallback.
 """
 
-import re
+import json
+import subprocess
 import sys
-import urllib.error
-import urllib.parse
-import urllib.request
 
-UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
-BASE = "https://inspections.myhealthdepartment.com"
+URL = "https://inspections.myhealthdepartment.com/va-henrico"
+
+BROWSER_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate, br",
+    "Sec-Ch-Ua": '"Chromium";v="126", "Not;A=Brand";v="24"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"macOS"',
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Sec-Fetch-User": "?1",
+    "Upgrade-Insecure-Requests": "1",
+    "Connection": "keep-alive",
+}
 
 
-def get(url, headers=None, timeout=25):
-    h = {"User-Agent": UA, "Accept": "*/*"}
-    if headers:
-        h.update(headers)
-    req = urllib.request.Request(url, headers=h)
+def run(cmd, label):
+    print(f"\n### {label}\n$ {' '.join(cmd[:6])} ...")
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            return r.status, dict(r.headers), r.read()
-    except urllib.error.HTTPError as e:
-        return e.code, dict(e.headers), e.read()[:2000]
+        p = subprocess.run(cmd, capture_output=True, text=True, timeout=90)
+        out = (p.stdout or "")[:2500]
+        err = (p.stderr or "")[:800]
+        print(out)
+        if err:
+            print("stderr:", err)
     except Exception as e:
-        return None, {"error": str(e)}, b""
-
-
-def show(label, url, headers=None, body_chars=0):
-    status, hdrs, body = get(url, headers)
-    ct = hdrs.get("Content-Type", hdrs.get("content-type", "?"))
-    print(f"\n[{label}] {url}\n  status={status} type={ct} len={len(body)}")
-    if hdrs.get("error"):
-        print(f"  error={hdrs['error']}")
-    if body_chars and body:
-        print("  body>>", body[:body_chars].decode("utf-8", "replace").replace("\n", " ")[:body_chars])
-    return status, hdrs, body
+        print("failed:", e)
 
 
 def main():
     print("=" * 70)
-    print("STEP 1: landing pages")
+    print("A. curl variants — what makes the 403 go away?")
     print("=" * 70)
 
-    pages = {}
-    for slug in ("va-henrico", "va-richmond", "virginia"):
-        st, hd, body = show("page", f"{BASE}/{slug}")
-        if body:
-            pages[slug] = body.decode("utf-8", "replace")
+    hdr_args = []
+    for k, v in BROWSER_HEADERS.items():
+        hdr_args += ["-H", f"{k}: {v}"]
 
-    html = pages.get("va-henrico", "")
-    if html:
-        print("\n--- scripts on va-henrico ---")
-        for m in re.findall(r'<script[^>]+src="([^"]+)"', html)[:40]:
-            print("  ", m)
-        print("\n--- api-ish strings in page html ---")
-        hits = set(re.findall(r'["\'](/[a-zA-Z0-9_\-/\.]*(?:api|json|search|data)[a-zA-Z0-9_\-/\.]*)["\']', html))
-        for h in sorted(hits)[:60]:
-            print("  ", h)
-        print("\n--- forms/inputs ---")
-        for m in re.findall(r"<form[^>]*>", html)[:10]:
-            print("  ", m[:300])
-        for m in re.findall(r"<input[^>]*>", html)[:30]:
-            print("  ", m[:200])
-        print("\n--- links containing inspection/establishment ---")
-        links = set(re.findall(r'href="([^"]*(?:inspection|establishment|facility|module)[^"]*)"', html, re.I))
-        for l in sorted(links)[:40]:
-            print("  ", l)
-        print("\n--- first 3000 chars of body ---")
-        body_start = html.find("<body")
-        print(html[body_start:body_start + 3000])
+    fmt = "\\nSTATUS=%{http_code} SIZE=%{size_download} HTTP=%{http_version} IP=%{remote_ip}\\n"
+
+    run(["curl", "-sS", "-o", "/dev/null", "-D", "-", "-w", fmt, "-m", "40", URL],
+        "curl bare (default UA)")
+    run(["curl", "-sS", "-o", "/dev/null", "-D", "-", "-w", fmt, "-m", "40",
+         "-A", BROWSER_HEADERS["User-Agent"], URL],
+        "curl + browser UA only")
+    run(["curl", "-sS", "-o", "/tmp/full.html", "-D", "-", "-w", fmt, "-m", "40",
+         "--compressed", "--http2"] + hdr_args + [URL],
+        "curl + full browser header set + http2")
+    run(["bash", "-c", "head -c 1500 /tmp/full.html 2>/dev/null || echo '(no body)'"],
+        "body of full-header attempt")
 
     print("\n" + "=" * 70)
-    print("STEP 2: js bundles -> api paths")
+    print("B. who is answering? dns + tls + redirects")
     print("=" * 70)
-    srcs = re.findall(r'<script[^>]+src="([^"]+)"', html)
-    for src in srcs[:12]:
-        url = urllib.parse.urljoin(f"{BASE}/va-henrico", src)
-        if "myhealthdepartment.com" not in urllib.parse.urlparse(url).netloc:
-            print(f"  skip external {url}")
-            continue
-        st, hd, body = get(url)
-        text = body.decode("utf-8", "replace")
-        print(f"\n[js] {url} status={st} len={len(text)}")
-        found = set(re.findall(r'["\'`](/(?:api|v1|v2)[a-zA-Z0-9_\-/\.\{\}:]*)["\'`]', text))
-        found |= set(re.findall(r'["\'`](https://[a-zA-Z0-9_\-\.]*myhealthdepartment[a-zA-Z0-9_\-/\.]*)["\'`]', text))
-        for f in sorted(found)[:60]:
-            print("   ->", f)
+    run(["bash", "-c", "getent hosts inspections.myhealthdepartment.com || true"], "dns")
+    run(["bash", "-c",
+         "curl -sS -o /dev/null -D - -m 40 -L 'https://inspections.myhealthdepartment.com/' "
+         "-A '" + BROWSER_HEADERS["User-Agent"] + "' | head -40"],
+        "root path headers")
+    run(["bash", "-c", "curl -sSI -m 40 https://www.myhealthdepartment.com/ | head -20"],
+        "marketing site (different host?)")
 
     print("\n" + "=" * 70)
-    print("STEP 3: candidate endpoints")
+    print("C. headless chromium via playwright")
     print("=" * 70)
-    candidates = [
-        f"{BASE}/va-henrico?module=Food",
-        f"{BASE}/virginia/Henrico?module=Food",
-        f"{BASE}/va-henrico/inspections",
-        f"{BASE}/va-henrico/search?q=pizza",
-        f"{BASE}/api/v1/jurisdictions",
-        f"{BASE}/api/jurisdictions",
-        f"{BASE}/api/v1/va-henrico/inspections",
-        f"{BASE}/va-henrico/api/inspections",
-        f"{BASE}/va-henrico/establishments",
-        f"{BASE}/va-henrico/recent",
-        f"{BASE}/sitemap.xml",
-        f"{BASE}/robots.txt",
-    ]
-    for c in candidates:
-        show("try", c, headers={"Accept": "application/json, text/html"}, body_chars=400)
+    script = r"""
+import json, re
+from playwright.sync_api import sync_playwright
+
+URL = "https://inspections.myhealthdepartment.com/va-henrico"
+calls = []
+with sync_playwright() as p:
+    b = p.chromium.launch()
+    ctx = b.new_context(viewport={"width": 1280, "height": 2000})
+    page = ctx.new_page()
+    page.on("request", lambda r: calls.append((r.method, r.url, r.resource_type)))
+    resp = page.goto(URL, wait_until="networkidle", timeout=60000)
+    print("STATUS:", resp.status if resp else None)
+    print("TITLE:", page.title())
+    html = page.content()
+    print("HTML LEN:", len(html))
+    print("---- xhr/fetch requests ----")
+    for m, u, t in calls:
+        if t in ("xhr", "fetch") or "/api" in u or ".json" in u:
+            print(f"  {m} [{t}] {u}")
+    print("---- visible text (first 2500 chars) ----")
+    print(page.inner_text("body")[:2500])
+    print("---- links ----")
+    hrefs = page.eval_on_selector_all("a", "els => els.map(e => e.getAttribute('href'))")
+    seen = []
+    for h in hrefs:
+        if h and h not in seen:
+            seen.append(h)
+    for h in seen[:60]:
+        print("  ", h)
+    b.close()
+"""
+    with open("/tmp/pw.py", "w") as f:
+        f.write(script)
+    run([sys.executable, "/tmp/pw.py"], "playwright chromium")
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
