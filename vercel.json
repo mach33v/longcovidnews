@@ -8,5 +8,11 @@
       "source": "/articles.json",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=300" }]
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/inspections/digest",
+      "schedule": "0 13 * * *"
+    }
   ]
 }

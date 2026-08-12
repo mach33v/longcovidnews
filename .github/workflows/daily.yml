@@ -52,18 +52,22 @@ jobs:
           def read(path):
               with open(path) as f: return f.read()
 
+          # Serverless functions and their shared modules must ride along with the
+          # static files — a deployment only contains what is uploaded here.
+          paths = ["index.html", "style.css", "app.js", "articles.json", "vercel.json"]
+          for directory in ("api", "lib"):
+              for root, _, names in os.walk(directory):
+                  for name in sorted(names):
+                      if name.endswith((".js", ".mjs", ".ts", ".json")):
+                          paths.append(os.path.join(root, name))
+
           deployment = {
               "name": "longcovidnews",
-              "files": [
-                  {"file": "index.html",    "data": read("index.html")},
-                  {"file": "style.css",     "data": read("style.css")},
-                  {"file": "app.js",        "data": read("app.js")},
-                  {"file": "articles.json", "data": read("articles.json")},
-                  {"file": "vercel.json",   "data": read("vercel.json")},
-              ],
+              "files": [{"file": p, "data": read(p)} for p in paths],
               "projectSettings": {"framework": None},
               "target": "production"
           }
+          print("Deploying files:", ", ".join(paths))
 
           req = urllib.request.Request(
               f"https://api.vercel.com/v13/deployments?teamId={team_id}",
