@@ -1,0 +1,67 @@
+name: Inspections digest — manual test send
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/richmond-inspections-telegram-bot-va58r6
+    paths:
+      - '.github/workflows/inspections-test-send.yml'
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: claude/richmond-inspections-telegram-bot-va58r6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Test send
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          INSPECTIONS_PROXY_TEMPLATE: ${{ secrets.INSPECTIONS_PROXY_TEMPLATE }}
+        run: |
+          {
+            echo "=== secrets present? ==="
+            [ -n "$TELEGRAM_BOT_TOKEN" ] && echo "TELEGRAM_BOT_TOKEN: yes" || echo "TELEGRAM_BOT_TOKEN: MISSING"
+            [ -n "$TELEGRAM_CHAT_ID" ]   && echo "TELEGRAM_CHAT_ID: yes"   || echo "TELEGRAM_CHAT_ID: MISSING"
+            [ -n "$INSPECTIONS_PROXY_TEMPLATE" ] && echo "PROXY: configured" || echo "PROXY: none"
+
+            echo
+            echo "=== renderer self-check ==="
+            node scripts/check-digest.mjs
+
+            echo
+            echo "=== attempt real fetch + send ==="
+            node scripts/send-digest.mjs --days 7
+            echo "real-send exit: $?"
+          } > send_output.txt 2>&1 || true
+
+          # If the portal refused this runner (exit 2), still prove the Telegram
+          # path works by sending a clearly-labelled sample.
+          if grep -q "^BLOCKED" send_output.txt && [ -n "$TELEGRAM_BOT_TOKEN" ]; then
+            {
+              echo
+              echo "=== portal blocked — sending labelled sample instead ==="
+              node scripts/send-digest.mjs --sample
+              echo "sample-send exit: $?"
+            } >> send_output.txt 2>&1 || true
+          fi
+
+          cat send_output.txt
+
+      - name: Commit output
+        run: |
+          git config user.name  "inspections-bot"
+          git config user.email "bot@example.com"
+          git add -f send_output.txt
+          git diff --cached --quiet || git commit -m "Test send output [skip ci]"
+          git pull --rebase origin claude/richmond-inspections-telegram-bot-va58r6 || true
+          git push origin HEAD:claude/richmond-inspections-telegram-bot-va58r6
