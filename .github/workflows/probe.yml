@@ -17,5 +17,5 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: pip install playwright && python -m playwright install --with-deps chromium
+
       - run: python agent/probe_inspections.py
