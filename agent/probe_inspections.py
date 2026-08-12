@@ -1,76 +1,85 @@
 #!/usr/bin/env python3
-"""TEMPORARY discovery probe (round 3).
+"""TEMPORARY discovery probe (round 4).
 
-Rounds 1-2: inspections.myhealthdepartment.com answers 403 from its AWS ALB to
-everything sent from a GitHub runner, including real headless Chromium — so the
-block is IP/ASN based. Now look for a route that isn't blocked, and for an
-open-data source that carries the same inspections.
+Established so far: inspections.myhealthdepartment.com returns an AWS-ALB 403 to
+the GitHub runner and to a third-party reader service alike, headless Chromium
+included, and no open-data mirror of Henrico/Richmond inspections exists.
+
+Round 4 answers two things:
+  1. Is there ANY egress that gets a 200? (public proxy services)
+  2. What does the page look like? (Wayback snapshots — enough to write the
+     parser even if the live fetch has to go through some other route.)
 """
 
+import json
 import subprocess
+import urllib.parse
 
+TARGET = "https://inspections.myhealthdepartment.com/va-henrico"
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
 
 
-def sh(label, cmd):
+def sh(label, cmd, limit=3000):
     print(f"\n### {label}")
     try:
-        p = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True, timeout=120)
-        print((p.stdout or "")[:3000])
+        p = subprocess.run(["bash", "-c", cmd], capture_output=True, text=True, timeout=150)
+        print((p.stdout or "")[:limit])
         if p.stderr.strip():
-            print("stderr:", p.stderr[:500])
+            print("stderr:", p.stderr[:400])
     except Exception as e:
         print("failed:", e)
 
 
 def main():
-    print("=" * 70)
-    print("A. alternate hosts for the same platform")
-    print("=" * 70)
-    for host in [
-        "api.myhealthdepartment.com",
-        "inspections-api.myhealthdepartment.com",
-        "app.myhealthdepartment.com",
-        "va.myhealthdepartment.com",
-        "healthspace.com",
-        "www.healthspace.com",
-    ]:
-        sh(host, f"curl -sS -o /dev/null -w 'STATUS=%{{http_code}} IP=%{{remote_ip}}\\n' "
-                 f"-m 25 -A '{UA}' https://{host}/ 2>&1 | tail -3")
+    enc = urllib.parse.quote(TARGET, safe="")
 
-    sh("legacy healthspace VDH module",
-       f"curl -sS -o /dev/null -w 'STATUS=%{{http_code}}\\n' -m 25 -A '{UA}' -L "
-       f"'https://healthspace.com/Clients/VDH/Virginia/Web.nsf/module_inspections.xsp' 2>&1 | tail -3")
-
-    print("\n" + "=" * 70)
-    print("B. does a third-party fetch of the portal succeed? (is it really our IP?)")
     print("=" * 70)
-    sh("r.jina.ai reader proxy",
-       "curl -sS -m 60 'https://r.jina.ai/https://inspections.myhealthdepartment.com/va-henrico' "
-       "| head -c 2500")
+    print("A. public proxy services — does any egress get a 200?")
+    print("=" * 70)
+    proxies = {
+        "allorigins": f"https://api.allorigins.win/raw?url={enc}",
+        "codetabs": f"https://api.codetabs.com/v1/proxy?quest={enc}",
+        "corsproxy.io": f"https://corsproxy.io/?url={enc}",
+        "thingproxy": f"https://thingproxy.freeboard.io/fetch/{TARGET}",
+        "textance": f"https://urlreq.appspot.com/req?method=GET&url={enc}",
+    }
+    for name, url in proxies.items():
+        sh(name,
+           f"curl -sS -m 45 -A '{UA}' -o /tmp/{name}.out -w 'STATUS=%{{http_code}} SIZE=%{{size_download}}\\n' "
+           f"'{url}'; echo '--- first 300 bytes ---'; head -c 300 /tmp/{name}.out; echo",
+           limit=900)
 
     print("\n" + "=" * 70)
-    print("C. open data portals")
+    print("B. wayback machine — snapshots of the portal")
     print("=" * 70)
-    sh("data.virginia.gov CKAN search: inspection",
-       "curl -sS -m 40 'https://data.virginia.gov/api/3/action/package_search?q=inspection&rows=25' "
-       "| python3 -c \"import sys,json; d=json.load(sys.stdin)['result']; print('count',d['count']); "
-       "[print('-',r['title'],'|',r['name'],'|',r.get('organization',{}).get('title')) for r in d['results']]\" 2>&1 | head -40")
-    sh("data.virginia.gov CKAN search: restaurant OR food establishment",
-       "curl -sS -m 40 'https://data.virginia.gov/api/3/action/package_search?q=restaurant+OR+%22food+establishment%22&rows=25' "
-       "| python3 -c \"import sys,json; d=json.load(sys.stdin)['result']; print('count',d['count']); "
-       "[print('-',r['title'],'|',r['name'],'|',[x.get('url') for x in r.get('resources',[])][:3]) for r in d['results']]\" 2>&1 | head -60")
+    sh("availability api",
+       f"curl -sS -m 40 'https://archive.org/wayback/available?url=inspections.myhealthdepartment.com/va-henrico'")
+    sh("cdx: all captured urls under the va-henrico path",
+       "curl -sS -m 60 'https://web.archive.org/cdx/search/cdx?url=inspections.myhealthdepartment.com/va-henrico*"
+       "&output=text&fl=timestamp,original,statuscode&collapse=urlkey&limit=60'")
+    sh("cdx: any api-looking captures on the host",
+       "curl -sS -m 60 'https://web.archive.org/cdx/search/cdx?url=inspections.myhealthdepartment.com*"
+       "&output=text&fl=timestamp,original,statuscode&collapse=urlkey&filter=original:.*(api|json|search).*&limit=60'")
 
     print("\n" + "=" * 70)
-    print("D. locality / district pages that may embed the data")
+    print("C. fetch the newest wayback snapshot and dissect it")
     print("=" * 70)
-    sh("henrico.gov food service links",
-       f"curl -sS -m 40 -A '{UA}' -L 'https://henrico.gov/health/environmental-health/food-service-links/' "
-       "| grep -oE 'href=\"[^\"]*\"' | sort -u | head -40")
-    sh("vdh richmond-city food safety",
-       f"curl -sS -m 40 -A '{UA}' -L 'https://www.vdh.virginia.gov/richmond-city/food-safety/' "
-       "| grep -oiE 'href=\"[^\"]*(inspect|myhealth|healthspace)[^\"]*\"' | sort -u | head -30")
+    sh("newest snapshot html -> structure",
+       "curl -sSL -m 90 'https://web.archive.org/web/2id_/https://inspections.myhealthdepartment.com/va-henrico' "
+       "-o /tmp/wb.html -w 'STATUS=%{http_code} SIZE=%{size_download}\\n'; "
+       "echo '--- scripts ---'; grep -oE '<script[^>]*src=\"[^\"]+\"' /tmp/wb.html | head -20; "
+       "echo '--- api-ish strings ---'; grep -oE '\"/[a-zA-Z0-9_/.-]*(api|json|search|inspection)[a-zA-Z0-9_/.-]*\"' /tmp/wb.html | sort -u | head -40; "
+       "echo '--- title/text sample ---'; grep -oE '<title>[^<]*</title>' /tmp/wb.html | head -3; "
+       "head -c 1200 /tmp/wb.html",
+       limit=4000)
+
+    print("\n" + "=" * 70)
+    print("D. sanity: can the runner reach unrelated sites fine?")
+    print("=" * 70)
+    sh("control fetches",
+       "for u in https://example.com https://www.henrico.gov https://api.telegram.org; do "
+       "printf '%s ' $u; curl -sS -o /dev/null -m 25 -w 'STATUS=%{http_code}\\n' $u || echo err; done")
 
 
 if __name__ == "__main__":
