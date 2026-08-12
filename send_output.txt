@@ -1,0 +1,19 @@
+=== secrets present? ===
+TELEGRAM_BOT_TOKEN: MISSING
+TELEGRAM_CHAT_ID: MISSING
+PROXY: none
+
+=== renderer self-check ===
+  ok  empty week produces one message and no keyboard
+  ok  every inspection gets exactly one numbered button
+  ok  messages stay under the Telegram length limit
+  ok  html in establishment names is escaped
+  ok  violation replies sort priority first and mark repeats
+  ok  violation reply handles an inspection with none
+  ok  splitMessage never breaks a line in half
+
+all 7 checks passed
+
+=== attempt real fetch + send ===
+BLOCKED: 403 from the inspections portal — this network is refused by its firewall. Set INSPECTIONS_PROXY_TEMPLATE to route requests through a fetch proxy.
+real-send exit: 2
