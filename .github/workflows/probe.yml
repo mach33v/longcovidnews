@@ -2,6 +2,12 @@ name: Probe inspections portal (temporary)
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - claude/richmond-inspections-telegram-bot-va58r6
+    paths:
+      - 'agent/probe_inspections.py'
+      - '.github/workflows/probe.yml'
 
 jobs:
   probe:
