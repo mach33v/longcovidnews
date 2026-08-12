@@ -1,148 +1,168 @@
 ======================================================================
-A. alternate hosts for the same platform
+A. public proxy services — does any egress get a 200?
 ======================================================================
 
-### api.myhealthdepartment.com
-curl: (6) Could not resolve host: api.myhealthdepartment.com
-STATUS=000 IP=
+### allorigins
+STATUS=200 SIZE=118
+--- first 300 bytes ---
+<html>
+<head><title>403 Forbidden</title></head>
+<body>
+<center><h1>403 Forbidden</h1></center>
+</body>
+</html>
 
 
-### inspections-api.myhealthdepartment.com
-curl: (6) Could not resolve host: inspections-api.myhealthdepartment.com
-STATUS=000 IP=
+
+### codetabs
+STATUS=522 SIZE=16
+--- first 300 bytes ---
+error code: 522
 
 
-### app.myhealthdepartment.com
-curl: (6) Could not resolve host: app.myhealthdepartment.com
-STATUS=000 IP=
+
+### corsproxy.io
+STATUS=403 SIZE=124
+--- first 300 bytes ---
+{"error":"Free usage is limited to localhost and development environments. Get an API key at https://corsproxy.io/pricing/"}
 
 
-### va.myhealthdepartment.com
-curl: (6) Could not resolve host: va.myhealthdepartment.com
-STATUS=000 IP=
+### thingproxy
+STATUS=000 SIZE=0
+--- first 300 bytes ---
 
 
-### healthspace.com
-establish a secure connection to it. To learn more about this situation and
-how to fix it, please visit the web page mentioned above.
-STATUS=000 IP=54.83.26.126
+stderr: curl: (6) Could not resolve host: thingproxy.freeboard.io
+head: cannot open '/tmp/thingproxy.out' for reading: No such file or directory
 
 
-### www.healthspace.com
-STATUS=404 IP=35.183.228.247
+### textance
+STATUS=503 SIZE=302
+--- first 300 bytes ---
 
-
-### legacy healthspace VDH module
-establish a secure connection to it. To learn more about this situation and
-how to fix it, please visit the web page mentioned above.
-STATUS=000
-
-
-======================================================================
-B. does a third-party fetch of the portal succeed? (is it really our IP?)
-======================================================================
-
-### r.jina.ai reader proxy
-Title: 403 Forbidden
-
-URL Source: https://inspections.myhealthdepartment.com/va-henrico
-
-Warning: Target URL returned error 403: Forbidden
-
-Markdown Content:
-403 Forbidden
+<html><head>
+<meta http-equiv="content-type" content="text/html;charset=utf-8">
+<title>503 Server Error</title>
+</head>
+<body text=#000000 bgcolor=#ffffff>
+<h1>Error: Server Error</h1>
+<h2>The service you requested is not available yet.<p>Please try again in 30 seconds.</h2>
+<h2></h2>
+</body></html
 
 
 ======================================================================
-C. open data portals
+B. wayback machine — snapshots of the portal
 ======================================================================
 
-### data.virginia.gov CKAN search: inspection
-count 114
-- Inspections | inspections1 | City of Norfolk
-- Inspections | inspections | City of Norfolk
-- Fire Inspections | fire-inspections | City of Norfolk
-- Vehicle Inspection File | vehicle-inspection-file | U.S Department of Transportation
-- Permits and Inspections | permits-and-inspections1 | City of Norfolk
-- Fire-Rescue Inspections | fire-rescue-inspections1 | City of Norfolk
-- Fire-Rescue Inspections | fire-rescue-inspections | City of Norfolk
-- Permits and Inspections | permits-and-inspections | City of Norfolk
-- Restaurant Inspection Results | restaurant-inspection-results | City of Norfolk
-- Inspections - Tabular | inspections-tabular | City of Lynchburg - GIS Portal 
-- Inspections - Locations | inspections-locations | City of Lynchburg - GIS Portal 
-- Inspection Citations | inspection-citations | HealthData.Gov
-- Vehicle Inspections and Violations | vehicle-inspections-and-violations | U.S Department of Transportation
-- SMS Input - Inspection | sms-input-inspection | U.S Department of Transportation
-- Inspections Per Unit | inspections-per-unit | U.S Department of Transportation
-- Inspections and Citations | inspections-and-citations | U.S Department of Transportation
-- Motor Carrier Inspections | motor-carrier-inspections | U.S Department of Transportation
-- CDRH Inspections Database | cdrh-inspections-database | HealthData.Gov
-- Rental Inspection Districts | rental-inspection-districts | Winchester
-- NHTSA Child Safety Seat Inspection Station Locator - NCSSISL - Child Car Seat Inspection Station Locator | nhtsa-child-safety-seat-inspection-station-locator-ncssisl-child-car-seat-inspection-station-lo | U.S Department of Transportation
-- NHTSA Child Safety Seat Inspection Station Locator - NCSSISL - Child Car Seat Inspection Station Locator | nhtsa-child-safety-seat-inspection-station-locator-ncssisl-child-car-seat-inspection-station-lo1 | U.S Department of Transportation
-- Storm Water Asset Inspections | storm-water-asset-inspections | City of Norfolk
-- NHTSA Child Safety Seat Inspection Station Locator | nhtsa-child-safety-seat-inspection-station-locator | U.S Department of Transportation
-- NHTSA Child Safety Seat Inspection Station Locator - NCSSISL | nhtsa-child-safety-seat-inspection-station-locator-ncssisl | U.S Department of Transportation
-- NHTSA Child Safety Seat Inspection Station Locator - NCSSISL - NHTSA API | nhtsa-child-safety-seat-inspection-station-locator-ncssisl-nhtsa-api1 | U.S Department of Transportation
+### availability api
+{"url": "inspections.myhealthdepartment.com/va-henrico", "archived_snapshots": {"closest": {"status": "200", "available": true, "url": "http://web.archive.org/web/20260107083027/https://inspections.myhealthdepartment.com/va-henrico", "timestamp": "20260107083027"}}}
 
+### cdx: all captured urls under the va-henrico path
+20191112193233 https://inspections.myhealthdepartment.com/va-henrico 200
+20241218111533 https://inspections.myhealthdepartment.com/va-henrico/css/myhd-full.min.css -
+20241218111532 https://inspections.myhealthdepartment.com/va-henrico/css/vendor/flatpickr/flatpickr.css -
+20241218111632 https://inspections.myhealthdepartment.com/va-henrico/fonts/vendor/fontawesome/fa-solid-900.woff2 -
+20250321024340 https://inspections.myhealthdepartment.com/va-henrico/html/subForm-entry.html -
+20221220154543 https://inspections.myhealthdepartment.com/va-henrico/images/MHD-Logo---Light-Background.png 200
+20241218111632 https://inspections.myhealthdepartment.com/va-henrico/images/mhd_icon___light_background_LIl_icon.ico -
+20221220154820 https://inspections.myhealthdepartment.com/va-henrico/images/MHD_Logo_Mobile.png 200
+20201112015438 https://inspections.myhealthdepartment.com/va-henrico/inspection/ 200
+20241218111748 https://inspections.myhealthdepartment.com/va-henrico/inspection/404.html -
+20220331225327 https://inspections.myhealthdepartment.com/va-henrico/inspection/css/myhd-full-1.0.0.css 200
+20241218090626 https://inspections.myhealthdepartment.com/va-henrico/inspection/css/myhd-full.min.css -
+20241218090626 https://inspections.myhealthdepartment.com/va-henrico/inspection/css/vendor/flatpickr/flatpickr.css -
+20241218120355 https://inspections.myhealthdepartment.com/va-henrico/inspection/html/subForm-entry.html -
+20220331225603 https://inspections.myhealthdepartment.com/va-henrico/inspection/images/MHD-Logo---Light-Background.png 200
+20220331225312 https://inspections.myhealthdepartment.com/va-henrico/inspection/images/mhd_icon___light_background_LIl_icon.ico 200
+20221220234755 https://inspections.myhealthdepartment.com/va-henrico/inspection/images/MHD_Logo_Mobile.png 200
+20220331225258 https://inspections.myhealthdepartment.com/va-henrico/inspection/js/myhd-full-1.0.0.js 200
+20241218090626 https://inspections.myhealthdepartment.com/va-henrico/inspection/js/myhd-full.min.js -
+20250620171828 https://inspections.myhealthdepartment.com/va-henrico/inspection/js/sentry.js -
+20241218090626 https://inspections.myhealthdepartment.com/va-henrico/inspection/js/vendor/flatpickr/flatpickr.js -
+20251230061253 https://inspections.myhealthdepartment.com/va-henrico/inspection/?inspectionID=007606B0-8F56-48AB-B014-F31CB8332C6F 200
+20251231033024 https://inspections.myhealthdepartment.com/va-henrico/inspection/?inspectionID=00897C7F-439E-408D-99ED-509862CA9138 200
+20250921074749 https://inspections.myhealthdepartment.com/va-henrico/inspection/?inspectionID=009C1276-00F7-407E-83A7-AFFD2B518E0E 200
+20250623012916 https://inspections.myhealthdepartment.com/va-henrico/inspection/?inspectionID=015CFC14-E723-448B-836C-A8DF1453875A 200
+20250916024631 https://inspections.myhealthdepartment.com/va-henrico/inspection/?inspectionID=01DBA636-4745-457A-81ED-8A95A0CCB6AC 200
+20201112005354 https://inspections.myhealthdepartment.com/va-henrico/inspection/?inspectionID=01E43052-ADA0-4B08-A35C
 
-### data.virginia.gov CKAN search: restaurant OR food establishment
-count 3
-- U.S. State and Territorial Public Mask Mandates From April 8, 2020 through August 15, 2021 by State by Day | u-s-state-and-territorial-public-mask-mandates-from-april-8-2020-through-august-15-2021-by-stat | ['https://data.cdc.gov/api/v3/views/tzyy-aayg/export.csv?accessType=DOWNLOAD', 'https://data.cdc.gov/api/v3/views/tzyy-aayg/query.json?accessType=DOWNLOAD', 'https://data.cdc.gov/api/v3/views/tzyy-aayg/export.xml?accessType=DOWNLOAD']
-- U.S. State and Territorial Public Mask Mandates From April 10, 2020 through July 20, 2021 by County by Day | u-s-state-and-territorial-public-mask-mandates-from-april-10-2020-through-july-20-2021-by-count | ['https://data.cdc.gov/api/v3/views/42jj-z7fa/export.csv?accessType=DOWNLOAD', 'https://data.cdc.gov/api/v3/views/42jj-z7fa/query.json?accessType=DOWNLOAD', 'https://data.cdc.gov/api/v3/views/42jj-z7fa/export.xml?accessType=DOWNLOAD']
-- U.S. State and Territorial Public Mask Mandates From April 10, 2020 through August 15, 2021 by County by Day | u-s-state-and-territorial-public-mask-mandates-from-april-10-2020-through-august-15-2021-by-cou | ['https://data.cdc.gov/api/v3/views/62d6-pm5i/export.csv?accessType=DOWNLOAD', 'https://data.cdc.gov/api/v3/views/62d6-pm5i/query.json?accessType=DOWNLOAD', 'https://data.cdc.gov/api/v3/views/62d6-pm5i/export.xml?accessType=DOWNLOAD']
-
+### cdx: any api-looking captures on the host
+20230705034611 https://inspections.myhealthdepartment.com/.well-known/ai-plugin.json 200
+20230605203823 https://inspections.myhealthdepartment.com/.well-known/assetlinks.json 200
+20230605072504 https://inspections.myhealthdepartment.com/.well-known/gpc.json 200
+20190407031223 http://inspections.myhealthdepartment.com:80/bureau-putnam-marshall/search 200
+20260710204159 https://inspections.myhealthdepartment.com/clarkcountywa/js/page-controllers/search/controller.js 200
+20260710204847 https://inspections.myhealthdepartment.com/clarkcountywa/search?searchStr=Amaro%27s%20Table 200
+20260710205000 https://inspections.myhealthdepartment.com/clarkcountywa/search?searchStr=El+Viejon 200
+20260710204158 https://inspections.myhealthdepartment.com/clarkcountywa/search?searchStr=Makoto 200
+20250613044538 https://inspections.myhealthdepartment.com/epcph/search 403
+20220410115613 https://inspections.myhealthdepartment.com/fort-worth-texas/js/page-controllers/search/controller.js 200
+20250722195239 https://inspections.myhealthdepartment.com/fort-worth-texas/search 200
+20220320225441 https://inspections.myhealthdepartment.com/fort-worth-texas/search?searchStr=wicked+butcher 200
+20190407031340 http://inspections.myhealthdepartment.com:80/gwinnett/search 200
+20210618050514 https://inspections.myhealthdepartment.com/gwinnett/search?searchStr=niko+niko 200
+20250604102707 http://inspections.myhealthdepartment.com/island%E2%80%91health/program%E2%80%91ccfl/search 301
+20250604110641 http://inspections.myhealthdepartment.com/island%E2%80%91health/program%E2%80%91ccfl/search?searchStr=bear's%20den 301
+20250604102613 https://inspections.myhealthdepartment.com/island-health/program-ccfl/js/page-controllers/search/controller.js 200
+20250604102446 http://inspections.myhealthdepartment.com/island-health/program-ccfl/search 301
+20250923143011 https://inspections.myhealthdepartment.com/island-health/program-ccfl/search?searchStr=almosthome 403
+20250604102250 http://inspections.myhealthdepartment.com/island-health/program-ccfl/search?searchStr=bear's%20den 301
+20230517233001 https://inspections.myhealthdepartment.com/island-health/program-food/js/page-controllers/search/controller.js 200
+20230517220531 https://inspections.myhealthdepartment.com/island-health/program-food/search 200
+20230517090750 https://inspections.myhealthdepartment.com/island-health/program-food/search?searchStr=Noodle+Box 200
+20230531074236 https://inspections.myhealthdepartment.com/multco-eh/js/page-controllers/search/controller.js 200
+20250820080019 https://inspections.myhealthdepartment.com/multco-eh/search 200
+20230525171410 https://inspections.myhealthdepartment.com/multco-eh/search?searchStr=knot+springs 200
+20230420184120 https://inspections.myhealthdepartment.com/or-benton-county/js/page-controllers/search/controller.js 200
+20230420184046 https://inspections.myhealthdepartment.com/or-benton-county/search 200
+20230420183842 https://inspections.myhealthdepartment.com/or-benton-county/search?searchStr=ame
 
 ======================================================================
-D. locality / district pages that may embed the data
+C. fetch the newest wayback snapshot and dissect it
 ======================================================================
 
-### henrico.gov food service links
-href="#"
-href="#main"
-href="/apple-touch-icon-120x120.png"
-href="/apple-touch-icon-152x152.png"
-href="/apple-touch-icon-60x60.png"
-href="/apple-touch-icon-76x76.png"
-href="/cdn-cgi/l/email-protection#34667c7c7044467442505c1a425d46535d5a5d551a535b42"
-href="/health/contact-us/"
-href="/locations/wic-office/"
-href="http://www.cdc.gov/"
-href="http://www.epa.gov/"
-href="http://www.fda.gov/"
-href="http://www.fightbac.org"
-href="http://www.foodsafety.gov/"
-href="https://henrico.gov/"
-href="https://henrico.gov/HenricoSealShare.png"
-href="https://henrico.gov/apps/"
-href="https://henrico.gov/assets/cropped-Favicon_Henrico-180x180.png"
-href="https://henrico.gov/assets/cropped-Favicon_Henrico-192x192.png"
-href="https://henrico.gov/assets/cropped-Favicon_Henrico-32x32.png"
-href="https://henrico.gov/assets/translation_disclaimer.pdf"
-href="https://henrico.gov/audit/"
-href="https://henrico.gov/bldg/"
-href="https://henrico.gov/budget/"
-href="https://henrico.gov/business/"
-href="https://henrico.gov/calendar/"
-href="https://henrico.gov/cc/"
-href="https://henrico.gov/ccjudges/"
-href="https://henrico.gov/census/"
-href="https://henrico.gov/clerk/"
-href="https://henrico.gov/com-atty/"
-href="https://henrico.gov/communications/"
-href="https://henrico.gov/community"
-href="https://henrico.gov/contact-us"
-href="https://henrico.gov/contact-us/"
-href="https://henrico.gov/countyattorney/"
-href="https://henrico.gov/dec/"
-href="https://henrico.gov/departments/"
-href="https://henrico.gov/dss/"
-href="https://henrico.gov/emws/"
+### newest snapshot html -> structure
+STATUS=200 SIZE=12059
+--- scripts ---
+<script src="/js/sentry.js"
+<script src="js/vendor/flatpickr/flatpickr.js"
+<script src="https://use.typekit.net/ksy3qdn.js"
+<script src="https://d1tdp7z6w94jbb.cloudfront.net/js/jquery-3.3.1.min.js"
+<script src="js/myhd-full.min.js"
+<script src="https://cdnjs.cloudflare.com/ajax/libs/placeholders/3.0.2/placeholders.min.js"
+<script src="js/page-controllers/jurisdiction-landing/controller.js"
+--- api-ish strings ---
+--- title/text sample ---
+<title>Home | Henrico County Health Department | My Health Department</title>
+<!doctype html>
+<html lang="en" data-wf-page="5c477d7234329c8ae83693a0" data-wf-site="5c477d7234329c39c036939f">
+<head>
+	<meta charset="utf-8">
+	<title>Home | Henrico County Health Department | My Health Department</title>
+	<meta content="width=device-width, initial-scale=1" name="viewport">
+	<meta content="Webflow" name="generator">
+	<!-- Sentry Integration -->
+	<script
+		src="https://d1x0oaju7ljwc0.cloudfront.net/sentry/bundle.tracing.replay.feedback.min.js"
+		integrity="sha384-Yy2UXIFrWRfe56w1BuJ8/pgltHwWyYP4Q7dYKueJ/c6RG8B/bPJmGv+TBTQSuTSv"
+		crossorigin="anonymous"
+	></script>
+	<script src="/js/sentry.js"></script>
+	<!-- include Flatpickr JS and CSS for datepicker-->
+	<link href="css/vendor/flatpickr/flatpickr.css" rel="stylesheet" type="text/css">
+	<script src="js/vendor/flatpickr/flatpickr.js" type="text/javascript"></script>
+	<link href="css/myhd-full.min.css" rel="stylesheet" type="text/css">
+	<script src="https://use.typekit.net/ksy3qdn.js" type="text/javascript"></script>
+	<script type="text/javascript">try{Typekit.load();}catch(e){}</script>
+	<script type="text/javascript">!function(o,c){var n=c.documentElement,t=" w-mod-";n.className+=t+"js",("ontouchstart"in o||o.Docu
 
+======================================================================
+D. sanity: can the runner reach unrelated sites fine?
+======================================================================
 
-### vdh richmond-city food safety
-href="https://inspections.myhealthdepartment.com/va-henrico"
-href="https://inspections.myhealthdepartment.com/va-richmond"
-href="https://inspections.myhealthdepartment.com/virginia"
-href="https://www.vdh.virginia.gov/content/uploads/sites/119/2023/12/Opening-a-Food-Establishment-Procedures-Checklist-Final-Inspection-Checklist-RCHD.pdf"
+### control fetches
+https://example.com STATUS=200
+https://www.henrico.gov STATUS=301
+https://api.telegram.org STATUS=302
 
