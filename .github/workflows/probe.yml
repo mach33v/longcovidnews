@@ -12,10 +12,24 @@ on:
 jobs:
   probe:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: claude/richmond-inspections-telegram-bot-va58r6
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - run: python agent/probe_inspections.py
+      - name: Run probe
+        run: python agent/probe_inspections.py > probe_output.txt 2>&1 || true
+
+      - name: Commit probe output
+        run: |
+          git config user.name  "probe-bot"
+          git config user.email "bot@example.com"
+          git add -f probe_output.txt
+          git diff --cached --quiet || git commit -m "Probe output [skip ci]"
+          git pull --rebase origin claude/richmond-inspections-telegram-bot-va58r6 || true
+          git push origin HEAD:claude/richmond-inspections-telegram-bot-va58r6
