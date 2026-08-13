@@ -129,6 +129,13 @@ about a dozen requests.
   risk-factor item number and a Virginia Administrative Code cite instead, so
   `severity` is left empty rather than guessed at, and violations render in the
   order the inspector wrote them.
+- **Henrico is limited to eight ZIPs.** The county reaches well past the area
+  worth reading about, so `JURISDICTIONS` carries a `zips` allowlist for it
+  (23238, 23229, 23226, 23230, 23228, 23294, 23060, 23233) — roughly two thirds
+  of its inspections. Richmond City has no allowlist and comes through whole.
+  Edit the `zips` array in `lib/inspections/portal.mjs` to change the area; drop
+  the key entirely to take a jurisdiction county-wide. The portal has no ZIP
+  filter of its own, so this is applied after fetching.
 - **Page size is fixed at 25.** `searchInspections` ignores the requested
   `count`; paging works by stepping `start` in 25s until a short page comes
   back. A busy week routinely exceeds 25 per jurisdiction, so this matters.
