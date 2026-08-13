@@ -89,8 +89,14 @@ not the cron expression.
 to a lot of datacenter traffic. Verified during development: GitHub Actions
 runners, a third-party reader service, and real headless Chromium were all
 refused, from every path, with browser-identical headers. Ordinary home
-connections are served normally. The portal has also added a reCAPTCHA to its
-search box, which is a clear signal about automated access.
+connections are served normally — the client is confirmed working end to end
+from a residential connection (2026-08-13).
+
+The reCAPTCHA on the search box does **not** gate the API. The portal's own
+jurisdiction config reports `enableCaptchaInspectionsLandingPage: false` for
+both `va-henrico` and `va-richmond`, and every call this client makes succeeds
+with no token of any kind. The only gate is the WAF, and it keys on the network
+the request comes from, not on the request itself.
 
 Whether Vercel's egress is allowed can only be answered by the `?diagnose=1`
 call above. If it comes back blocked, route requests through a fetch proxy by
@@ -113,6 +119,16 @@ about a dozen requests.
 - **No dedupe state.** The digest reports a rolling 7-day window. Vercel
   functions have no writable disk, so running it twice in one week sends
   overlapping content.
-- **Violation parsing is best-effort.** The portal's printable report is parsed
-  heuristically; when nothing recognizable is found, the reply links to the
-  full report instead of inventing detail.
+- **Where violations come from.** The inspection page server-renders the
+  inspector's write-up into a single `<p class="observations-text">` block, so
+  one GET reads it. The JSON API has no task that returns violations
+  (`getInspection` is rejected as invalid) and `/print/?task=getPrintable`
+  returns a scanned-image PDF with no text layer — neither is usable.
+- **No severity classification.** VDH's Priority / Priority Foundation / Core
+  ranking is not published anywhere on this portal. Entries carry the FDA
+  risk-factor item number and a Virginia Administrative Code cite instead, so
+  `severity` is left empty rather than guessed at, and violations render in the
+  order the inspector wrote them.
+- **Page size is fixed at 25.** `searchInspections` ignores the requested
+  `count`; paging works by stepping `start` in 25s until a short page comes
+  back. A busy week routinely exceeds 25 per jurisdiction, so this matters.
